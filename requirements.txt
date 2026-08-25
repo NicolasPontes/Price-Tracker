@@ -1,0 +1,22 @@
+SQLAlchemy
+pyodbc
+python-dotenv
+
+
+
+Banco de dados:
+
+
+Produtos
+    Campo | Exemplo
+    id | 1
+    nome | Mouse 
+    url | https://www.example.com/mouse
+    preco_atual | 29.99
+    preco_desejado | 25.00
+
+Historico de Precos
+    Produto id | Preco | Data
+    1 | 29.99 | 2024-06-01
+
+
