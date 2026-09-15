@@ -1,7 +1,8 @@
 SQLAlchemy
 pyodbc
 python-dotenv
-
+requests
+beautifulsoup4
 
 
 Banco de dados:

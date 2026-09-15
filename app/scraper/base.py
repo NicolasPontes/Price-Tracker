@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
 
-class ScraperBase(ABC):
+class ProductScraper(ABC):
     @abstractmethod
-    def coletar_preco(self, url: str) -> Decimal:
+    def get_product_data(self, url: str) -> dict:
+        """
+        Busca os dados de um produto através da URL.
+        """
+
         pass

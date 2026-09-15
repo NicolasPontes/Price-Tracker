@@ -1,4 +1,13 @@
+# Segredos e tokens — NUNCA versionar
+tokens.json
 .env
-venv/
+ 
+# Python
 __pycache__/
 *.pyc
+.venv/
+venv/
+ 
+# Debug
+debug.html
+ 
