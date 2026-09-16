@@ -25,8 +25,8 @@ AUTH_BASE_URL = "https://auth.mercadolivre.com.br/authorization"
 
 # Ajuste esses 3 valores com o que você pegou no DevCenter,
 # de preferência via variáveis de ambiente (não deixe hardcoded em produção).
-APP_ID = os.environ.get("ML_APP_ID", "5608617907041786")
-SECRET_KEY = os.environ.get("ML_SECRET_KEY", "oYx3hoDSlNdDOjgSlK0Ue0tLoFmgRdNH")
+APP_ID = os.environ.get("ML_APP_ID", "")
+SECRET_KEY = os.environ.get("ML_SECRET_KEY", "")
 REDIRECT_URI = os.environ.get("ML_REDIRECT_URI", "https://tecaudio.vercel.app/")
 
 TOKENS_FILE = os.path.join(
