@@ -29,7 +29,7 @@ def verificar_precos() -> None:
 
         for produto in produtos:
             try:
-                _verificar_produto(session, produto)
+                verificar_produto(session, produto)
             except Exception:
                 # Um produto com erro (ex: site fora do ar, item removido)
                 # não deve travar a verificação dos outros produtos.
@@ -40,7 +40,11 @@ def verificar_precos() -> None:
                 continue
 
 
-def _verificar_produto(session, produto: Produto) -> None:
+def verificar_produto(session, produto: Produto) -> None:
+    """
+    Verifica o preço de UM produto específico. Reutilizada tanto pelo loop
+    de `verificar_precos()` quanto pela API (endpoint "verificar agora").
+    """
 
     scraper = get_scraper_for_url(produto.url)
     dados = scraper.get_product_data(produto.url)
