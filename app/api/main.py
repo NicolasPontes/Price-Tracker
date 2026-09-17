@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.routes.auth import router as auth_router
 from app.api.routes.produtos import router as produtos_router
 from app.database.init_db import criar_tabelas
 from app.scheduler.scheduler import iniciar_scheduler_background
@@ -29,6 +30,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.include_router(auth_router)
 app.include_router(produtos_router)
 
 app.mount(

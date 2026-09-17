@@ -2,42 +2,35 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.database.connection import SessionLocal
 from app.database.models import HistoricoPreco, Produto
 from app.scraper.factory import get_scraper_for_url
 
 
-def cadastrar_produto(nome: str, url: str, preco_alvo: Decimal) -> Produto:
-    """
-    Cadastro simples, sem buscar dados do site — usado em scripts/testes
-    manuais. Para a API/frontend, use `cadastrar_via_url`.
-    """
-
-    with SessionLocal() as session:
-        try:
-            produto = Produto(nome=nome, url=url, preco_alvo=preco_alvo)
-            session.add(produto)
-            session.commit()
-            session.refresh(produto)
-            return produto
-        except Exception as e:
-            session.rollback()
-            raise e
-
-
-def listar_produtos(session: Session) -> list[Produto]:
+def listar_produtos(session: Session, usuario_id: int) -> list[Produto]:
     return (
         session.query(Produto)
+        .filter(Produto.usuario_id == usuario_id)
         .order_by(Produto.criado_em.desc())
         .all()
     )
 
 
-def obter_produto(session: Session, produto_id: int) -> Produto | None:
-    return session.get(Produto, produto_id)
+def obter_produto(session: Session, produto_id: int, usuario_id: int) -> Produto | None:
+    """
+    Busca um produto garantindo que ele pertence ao usuário informado.
+    Retorna None tanto se o produto não existe quanto se pertence a outro
+    usuário — de propósito, pra não vazar pra terceiros se um ID existe ou não.
+    """
+
+    produto = session.get(Produto, produto_id)
+
+    if produto is None or produto.usuario_id != usuario_id:
+        return None
+
+    return produto
 
 
-def cadastrar_via_url(session: Session, url: str, preco_alvo: Decimal) -> Produto:
+def cadastrar_via_url(session: Session, usuario_id: int, url: str, preco_alvo: Decimal) -> Produto:
     """
     Cadastra um produto a partir apenas da URL: busca nome e preço atual
     automaticamente via scraper e já registra o primeiro ponto no histórico.
@@ -49,6 +42,7 @@ def cadastrar_via_url(session: Session, url: str, preco_alvo: Decimal) -> Produt
     preco_atual = Decimal(str(dados["preco"]))
 
     produto = Produto(
+        usuario_id=usuario_id,
         nome=dados["nome"],
         url=dados["url"],
         preco_atual=preco_atual,
@@ -68,11 +62,12 @@ def cadastrar_via_url(session: Session, url: str, preco_alvo: Decimal) -> Produt
 def atualizar_produto(
     session: Session,
     produto_id: int,
+    usuario_id: int,
     preco_alvo: Decimal | None = None,
     ativo: bool | None = None
 ) -> Produto | None:
 
-    produto = session.get(Produto, produto_id)
+    produto = obter_produto(session, produto_id, usuario_id)
 
     if not produto:
         return None
@@ -89,9 +84,9 @@ def atualizar_produto(
     return produto
 
 
-def remover_produto(session: Session, produto_id: int) -> bool:
+def remover_produto(session: Session, produto_id: int, usuario_id: int) -> bool:
 
-    produto = session.get(Produto, produto_id)
+    produto = obter_produto(session, produto_id, usuario_id)
 
     if not produto:
         return False
@@ -102,7 +97,13 @@ def remover_produto(session: Session, produto_id: int) -> bool:
     return True
 
 
-def obter_historico(session: Session, produto_id: int) -> list[HistoricoPreco]:
+def obter_historico(session: Session, produto_id: int, usuario_id: int) -> list[HistoricoPreco] | None:
+
+    produto = obter_produto(session, produto_id, usuario_id)
+
+    if not produto:
+        return None
+
     return (
         session.query(HistoricoPreco)
         .filter(HistoricoPreco.produto_id == produto_id)

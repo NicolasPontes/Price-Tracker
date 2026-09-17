@@ -1,30 +1,199 @@
-const API_BASE = "/api/produtos";
+const API_PRODUTOS = "/api/produtos";
+const API_AUTH = "/api/auth";
+const CHAVE_TOKEN = "notificador_token";
+
+// ===== Elementos =====
+
+const viewAuth = document.getElementById("view-auth");
+const viewApp = document.getElementById("view-app");
+
+const abas = document.querySelectorAll(".aba");
+const formLogin = document.getElementById("form-login");
+const formRegistro = document.getElementById("form-registro");
+const authErroEl = document.getElementById("auth-erro");
+
+const btnLogout = document.getElementById("btn-logout");
 
 const listaEl = document.getElementById("lista-produtos");
 const estadoVazioEl = document.getElementById("estado-vazio");
 const estadoCarregandoEl = document.getElementById("estado-carregando");
-const formEl = document.getElementById("form-cadastro");
+const formCadastro = document.getElementById("form-cadastro");
 const btnCadastrarEl = document.getElementById("btn-cadastrar");
 const mensagemErroEl = document.getElementById("mensagem-erro");
 const templateLinha = document.getElementById("template-linha-produto");
+
+// ===== Utilitários =====
 
 function formatarPreco(valor) {
   return Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatarData(iso) {
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+function getToken() {
+  return localStorage.getItem(CHAVE_TOKEN);
 }
 
-function mostrarErro(msg) {
-  mensagemErroEl.textContent = msg;
-  mensagemErroEl.hidden = false;
+function setToken(token) {
+  localStorage.setItem(CHAVE_TOKEN, token);
 }
 
-function limparErro() {
-  mensagemErroEl.hidden = true;
-  mensagemErroEl.textContent = "";
+function limparToken() {
+  localStorage.removeItem(CHAVE_TOKEN);
 }
+
+// Wrapper de fetch que injeta o token e trata 401 (token expirado/ inválido)
+// globalmente, jogando o usuário de volta pra tela de login.
+async function apiFetch(url, options = {}) {
+  const headers = { ...(options.headers || {}), Authorization: `Bearer ${getToken()}` };
+  const resp = await fetch(url, { ...options, headers });
+
+  if (resp.status === 401) {
+    limparToken();
+    mostrarTelaAuth();
+    throw new Error("Sessão expirada. Faça login novamente.");
+  }
+
+  return resp;
+}
+
+function mostrarErro(el, msg) {
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+function limparErro(el) {
+  el.hidden = true;
+  el.textContent = "";
+}
+
+// ===== Alternância de telas =====
+
+function mostrarTelaAuth() {
+  viewAuth.hidden = false;
+  viewApp.hidden = true;
+}
+
+function mostrarTelaApp() {
+  viewAuth.hidden = true;
+  viewApp.hidden = false;
+  carregarProdutos();
+}
+
+// ===== Abas login / registro =====
+
+abas.forEach(aba => {
+  aba.addEventListener("click", () => {
+    abas.forEach(a => a.classList.remove("aba-ativa"));
+    aba.classList.add("aba-ativa");
+
+    limparErro(authErroEl);
+
+    if (aba.dataset.aba === "login") {
+      formLogin.hidden = false;
+      formRegistro.hidden = true;
+    } else {
+      formLogin.hidden = true;
+      formRegistro.hidden = false;
+    }
+  });
+});
+
+// ===== Login =====
+
+formLogin.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  limparErro(authErroEl);
+
+  const email = document.getElementById("login-email").value.trim();
+  const senha = document.getElementById("login-senha").value;
+
+  const btn = formLogin.querySelector("button");
+  btn.disabled = true;
+  btn.textContent = "Entrando…";
+
+  try {
+    const corpo = new URLSearchParams();
+    corpo.set("username", email);
+    corpo.set("password", senha);
+
+    const resp = await fetch(`${API_AUTH}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: corpo
+    });
+
+    if (!resp.ok) {
+      const erro = await resp.json().catch(() => ({}));
+      throw new Error(erro.detail || "E-mail ou senha inválidos.");
+    }
+
+    const dados = await resp.json();
+    setToken(dados.access_token);
+    formLogin.reset();
+    mostrarTelaApp();
+  } catch (e) {
+    mostrarErro(authErroEl, e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+  }
+});
+
+// ===== Registro =====
+
+formRegistro.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  limparErro(authErroEl);
+
+  const email = document.getElementById("registro-email").value.trim();
+  const senha = document.getElementById("registro-senha").value;
+
+  const btn = formRegistro.querySelector("button");
+  btn.disabled = true;
+  btn.textContent = "Criando conta…";
+
+  try {
+    const resp = await fetch(`${API_AUTH}/registrar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha })
+    });
+
+    if (!resp.ok) {
+      const erro = await resp.json().catch(() => ({}));
+      throw new Error(erro.detail || "Não foi possível criar a conta.");
+    }
+
+    // Conta criada -> loga automaticamente
+    const corpo = new URLSearchParams();
+    corpo.set("username", email);
+    corpo.set("password", senha);
+
+    const respLogin = await fetch(`${API_AUTH}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: corpo
+    });
+
+    const dadosLogin = await respLogin.json();
+    setToken(dadosLogin.access_token);
+    formRegistro.reset();
+    mostrarTelaApp();
+  } catch (e) {
+    mostrarErro(authErroEl, e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Criar conta";
+  }
+});
+
+// ===== Logout =====
+
+btnLogout.addEventListener("click", () => {
+  limparToken();
+  mostrarTelaAuth();
+});
+
+// ===== Produtos (dashboard) =====
 
 async function carregarProdutos() {
   estadoCarregandoEl.hidden = false;
@@ -32,7 +201,7 @@ async function carregarProdutos() {
   listaEl.innerHTML = "";
 
   try {
-    const resp = await fetch(API_BASE);
+    const resp = await apiFetch(API_PRODUTOS);
     if (!resp.ok) throw new Error("Falha ao carregar produtos");
     const produtos = await resp.json();
 
@@ -46,11 +215,12 @@ async function carregarProdutos() {
     for (const produto of produtos) {
       const linha = criarLinhaProduto(produto);
       listaEl.appendChild(linha);
-      carregarHistorico(produto.id, linha);
+      carregarHistorico(produto.id);
     }
   } catch (e) {
     estadoCarregandoEl.hidden = true;
-    mostrarErro("Não foi possível carregar os produtos. Verifique se a API está no ar.");
+    if (e.message.includes("Sessão expirada")) return;
+    mostrarErro(mensagemErroEl, "Não foi possível carregar os produtos.");
   }
 }
 
@@ -83,17 +253,16 @@ function criarLinhaProduto(produto) {
   return clone;
 }
 
-async function carregarHistorico(produtoId, linhaFragment) {
+async function carregarHistorico(produtoId) {
   try {
-    const resp = await fetch(`${API_BASE}/${produtoId}/historico`);
+    const resp = await apiFetch(`${API_PRODUTOS}/${produtoId}/historico`);
     if (!resp.ok) return;
     const pontos = await resp.json();
 
     const artigo = listaEl.querySelector(`.linha-produto[data-id="${produtoId}"]`);
     if (!artigo || pontos.length < 2) return;
 
-    const svg = artigo.querySelector(".sparkline");
-    desenharSparkline(svg, pontos);
+    desenharSparkline(artigo.querySelector(".sparkline"), pontos);
   } catch (e) {
     // Sparkline é um extra visual; falha silenciosa não deve travar a UI
   }
@@ -122,7 +291,7 @@ function desenharSparkline(svg, pontos) {
 
 async function alternarAtivo(produtoId, novoAtivo) {
   try {
-    const resp = await fetch(`${API_BASE}/${produtoId}`, {
+    const resp = await apiFetch(`${API_PRODUTOS}/${produtoId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ativo: novoAtivo })
@@ -130,7 +299,7 @@ async function alternarAtivo(produtoId, novoAtivo) {
     if (!resp.ok) throw new Error();
     carregarProdutos();
   } catch (e) {
-    mostrarErro("Não foi possível atualizar o produto.");
+    mostrarErro(mensagemErroEl, "Não foi possível atualizar o produto.");
   }
 }
 
@@ -140,14 +309,14 @@ async function verificarAgora(produtoId, botao) {
   botao.textContent = "Verificando…";
 
   try {
-    const resp = await fetch(`${API_BASE}/${produtoId}/verificar`, { method: "POST" });
+    const resp = await apiFetch(`${API_PRODUTOS}/${produtoId}/verificar`, { method: "POST" });
     if (!resp.ok) {
       const erro = await resp.json().catch(() => ({}));
       throw new Error(erro.detail || "Falha ao verificar preço");
     }
     await carregarProdutos();
   } catch (e) {
-    mostrarErro(e.message);
+    mostrarErro(mensagemErroEl, e.message);
     botao.disabled = false;
     botao.textContent = textoOriginal;
   }
@@ -157,17 +326,17 @@ async function removerProduto(produtoId, nome) {
   if (!confirm(`Parar de monitorar "${nome}"? Isso apaga o histórico de preços dele.`)) return;
 
   try {
-    const resp = await fetch(`${API_BASE}/${produtoId}`, { method: "DELETE" });
+    const resp = await apiFetch(`${API_PRODUTOS}/${produtoId}`, { method: "DELETE" });
     if (!resp.ok) throw new Error();
     carregarProdutos();
   } catch (e) {
-    mostrarErro("Não foi possível remover o produto.");
+    mostrarErro(mensagemErroEl, "Não foi possível remover o produto.");
   }
 }
 
-formEl.addEventListener("submit", async (e) => {
+formCadastro.addEventListener("submit", async (e) => {
   e.preventDefault();
-  limparErro();
+  limparErro(mensagemErroEl);
 
   const url = document.getElementById("input-url").value.trim();
   const precoAlvo = document.getElementById("input-preco-alvo").value;
@@ -176,7 +345,7 @@ formEl.addEventListener("submit", async (e) => {
   btnCadastrarEl.textContent = "Buscando produto…";
 
   try {
-    const resp = await fetch(API_BASE, {
+    const resp = await apiFetch(API_PRODUTOS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, preco_alvo: precoAlvo })
@@ -187,14 +356,20 @@ formEl.addEventListener("submit", async (e) => {
       throw new Error(erro.detail || "Não foi possível cadastrar o produto.");
     }
 
-    formEl.reset();
+    formCadastro.reset();
     await carregarProdutos();
   } catch (e) {
-    mostrarErro(e.message);
+    mostrarErro(mensagemErroEl, e.message);
   } finally {
     btnCadastrarEl.disabled = false;
     btnCadastrarEl.textContent = "Monitorar";
   }
 });
 
-carregarProdutos();
+// ===== Bootstrap =====
+
+if (getToken()) {
+  mostrarTelaApp();
+} else {
+  mostrarTelaAuth();
+}
