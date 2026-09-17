@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/x-icon" href="/static/PriceTracker.ico">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -77,7 +78,7 @@
       <label for="input-preco-alvo">Avisar quando chegar em</label>
       <div class="prefixo-moeda">
         <span>R$</span>
-        <input type="number" id="input-preco-alvo" name="preco_alvo" min="0.01" step="0.01" placeholder="0,00" required>
+        <input type="text" inputmode="decimal" id="input-preco-alvo" name="preco_alvo" placeholder="0,00" autocomplete="off" required>
       </div>
     </div>
     <button type="submit" id="btn-cadastrar">Monitorar</button>

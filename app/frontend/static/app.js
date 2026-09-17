@@ -21,11 +21,46 @@ const formCadastro = document.getElementById("form-cadastro");
 const btnCadastrarEl = document.getElementById("btn-cadastrar");
 const mensagemErroEl = document.getElementById("mensagem-erro");
 const templateLinha = document.getElementById("template-linha-produto");
+const inputPrecoAlvo = document.getElementById("input-preco-alvo");
+
+aplicarMascaraMoeda(inputPrecoAlvo);
 
 // ===== Utilitários =====
 
 function formatarPreco(valor) {
   return Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Formata o campo como moeda brasileira enquanto o usuário digita
+// (ex: digitar "12550" vira "125,50"). Funciona só com dígitos,
+// então cada tecla numérica empurra os centavos.
+function aplicarMascaraMoeda(input) {
+  input.addEventListener("input", () => {
+    let digitos = input.value.replace(/\D/g, "");
+
+    if (!digitos) {
+      input.value = "";
+      return;
+    }
+
+    const valorEmCentavos = parseInt(digitos, 10);
+    const valorFormatado = (valorEmCentavos / 100).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    input.value = valorFormatado;
+  });
+}
+
+// Converte "1.234,56" (formato mascarado) de volta para 1234.56 (número)
+function valorMascaraParaNumero(valorMascarado) {
+  if (!valorMascarado) return null;
+
+  const limpo = valorMascarado.replace(/\./g, "").replace(",", ".");
+  const numero = parseFloat(limpo);
+
+  return isNaN(numero) ? null : numero;
 }
 
 function getToken() {
@@ -339,7 +374,12 @@ formCadastro.addEventListener("submit", async (e) => {
   limparErro(mensagemErroEl);
 
   const url = document.getElementById("input-url").value.trim();
-  const precoAlvo = document.getElementById("input-preco-alvo").value;
+  const precoAlvo = valorMascaraParaNumero(inputPrecoAlvo.value);
+
+  if (precoAlvo === null || precoAlvo <= 0) {
+    mostrarErro(mensagemErroEl, "Informe um valor desejado válido.");
+    return;
+  }
 
   btnCadastrarEl.disabled = true;
   btnCadastrarEl.textContent = "Buscando produto…";
