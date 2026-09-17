@@ -1,86 +1,93 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Notificador de Preço</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificador de Preço</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="app/frontend/PriceTracker.ico" type="image/x-icon">
 </head>
+
 <body>
 
-<div class="folha">
+    <div class="folha">
 
-  <header class="cabecalho">
-    <h1>Notificador de Preço</h1>
-    <p class="subtitulo">Cole o link de um produto e avise quando o preço cair.</p>
-  </header>
+        <header class="cabecalho">
+            <h1>Notificador de Preço</h1>
+            <p class="subtitulo">Cole o link de um produto e avise quando o preço cair.</p>
+        </header>
 
-  <div class="perfuracao" aria-hidden="true"></div>
+        <div class="perfuracao" aria-hidden="true"></div>
 
-  <form id="form-cadastro" class="ticket-form">
-    <div class="campo campo-url">
-      <label for="input-url">Link do produto</label>
-      <input type="url" id="input-url" name="url" placeholder="https://www.mercadolivre.com.br/..." required>
-    </div>
-    <div class="campo campo-preco">
-      <label for="input-preco-alvo">Avisar quando chegar em</label>
-      <div class="prefixo-moeda">
-        <span>R$</span>
-        <input type="number" id="input-preco-alvo" name="preco_alvo" min="0.01" step="0.01" placeholder="0,00" required>
-      </div>
-    </div>
-    <button type="submit" id="btn-cadastrar">Monitorar</button>
-  </form>
+        <form id="form-cadastro" class="ticket-form">
+            <div class="campo campo-url">
+                <label for="input-url">Link do produto</label>
+                <input type="url" id="input-url" name="url" placeholder="https://www.mercadolivre.com.br/..." required>
+            </div>
+            <div class="campo campo-preco">
+                <label for="input-preco-alvo">Avisar quando chegar em</label>
+                <div class="prefixo-moeda">
+                    <span>R$</span>
+                    <input type="number" id="input-preco-alvo" name="preco_alvo" min="0.01" step="0.01"
+                        placeholder="0,00" required>
+                </div>
+            </div>
+            <button type="submit" id="btn-cadastrar">Monitorar</button>
+        </form>
 
-  <p id="mensagem-erro" class="mensagem-erro" hidden></p>
+        <p id="mensagem-erro" class="mensagem-erro" hidden></p>
 
-  <section aria-label="Produtos monitorados">
-    <div id="lista-produtos" class="lista-produtos">
-      <!-- Linhas de produto inseridas via JS -->
-    </div>
+        <section aria-label="Produtos monitorados">
+            <div id="lista-produtos" class="lista-produtos">
+                <!-- Linhas de produto inseridas via JS -->
+            </div>
 
-    <div id="estado-vazio" class="estado-vazio" hidden>
-      <p>Nenhum produto sendo monitorado ainda.</p>
-      <p class="estado-vazio-sub">Cole o link de um produto acima para começar.</p>
-    </div>
+            <div id="estado-vazio" class="estado-vazio" hidden>
+                <p>Nenhum produto sendo monitorado ainda.</p>
+                <p class="estado-vazio-sub">Cole o link de um produto acima para começar.</p>
+            </div>
 
-    <div id="estado-carregando" class="estado-carregando">
-      <p>Carregando produtos…</p>
-    </div>
-  </section>
+            <div id="estado-carregando" class="estado-carregando">
+                <p>Carregando produtos…</p>
+            </div>
+        </section>
 
-</div>
-
-<template id="template-linha-produto">
-  <article class="linha-produto">
-    <div class="linha-topo">
-      <div class="linha-info">
-        <a class="linha-nome" target="_blank" rel="noopener"></a>
-        <div class="linha-meta">
-          <span class="badge"></span>
-          <span class="linha-alvo"></span>
-        </div>
-      </div>
-      <div class="linha-preco">
-        <span class="prefixo">R$</span><span class="valor-preco"></span>
-      </div>
     </div>
 
-    <div class="linha-grafico">
-      <svg class="sparkline" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
-    </div>
+    <template id="template-linha-produto">
+        <article class="linha-produto">
+            <div class="linha-topo">
+                <div class="linha-info">
+                    <a class="linha-nome" target="_blank" rel="noopener"></a>
+                    <div class="linha-meta">
+                        <span class="badge"></span>
+                        <span class="linha-alvo"></span>
+                    </div>
+                </div>
+                <div class="linha-preco">
+                    <span class="prefixo">R$</span><span class="valor-preco"></span>
+                </div>
+            </div>
 
-    <div class="linha-acoes">
-      <button class="acao acao-verificar" type="button">Verificar agora</button>
-      <button class="acao acao-pausar" type="button"></button>
-      <button class="acao acao-remover" type="button">Remover</button>
-    </div>
-  </article>
-</template>
+            <div class="linha-grafico">
+                <svg class="sparkline" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+            </div>
 
-<script src="/static/app.js"></script>
+            <div class="linha-acoes">
+                <button class="acao acao-verificar" type="button">Verificar agora</button>
+                <button class="acao acao-pausar" type="button"></button>
+                <button class="acao acao-remover" type="button">Remover</button>
+            </div>
+        </article>
+    </template>
+
+    <script src="/static/app.js"></script>
 </body>
+
 </html>
