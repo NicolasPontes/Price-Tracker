@@ -5,7 +5,7 @@ python-multipart>=0.0.9,<1.0   # necessário para o form de login (OAuth2Passwor
 
 # --- Banco de dados ---
 sqlalchemy>=2.0,<3.0
-pyodbc>=5.1,<6.0                # driver de conexão com SQL Server
+psycopg2-binary>=2.9,<3.0       # driver de conexão com PostgreSQL
 
 # --- Scraping / integração com marketplaces ---
 requests>=2.32,<3.0

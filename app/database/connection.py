@@ -1,4 +1,4 @@
-import os 
+import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -6,18 +6,23 @@ from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
-DB_SERVER = os.getenv("DB_SERVER")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_DRIVER = os.getenv("DB_DRIVER")
 
-DATABASE_URL = (  f"mssql+pyodbc://{DB_USER}:{DB_PASSWORD}"
-    f"@{DB_SERVER}/{DB_NAME}"
-    f"?driver={DB_DRIVER.replace(' ', '+')}"
-    "&TrustServerCertificate=yes")
+# Log das queries SQL no terminal — útil em desenvolvimento, mas fica
+# barulhento (e um pouco arriscado, se logs forem persistidos) em produção.
+# Desligue definindo DB_ECHO=false no .env.
+DB_ECHO = os.getenv("DB_ECHO", "true").lower() == "true"
 
-engine = create_engine(DATABASE_URL, echo=True)
+DATABASE_URL = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}"
+    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+
+engine = create_engine(DATABASE_URL, echo=DB_ECHO)
 
 SessionLocal = sessionmaker(
     bind=engine,
